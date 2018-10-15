@@ -16,6 +16,7 @@ describe('Campaign Contract', () => {
 
         contract.setProvider(provider);
     });
+
     describe('initialize', () => {
         it('should deploy', () => {
             expect(contract.options.address).to.exist;
@@ -41,9 +42,43 @@ describe('Campaign Contract', () => {
     });
 
     describe('contribute', () => {
-        it('should increase balance of account by donation made');
-        it('should not add address to approvers array if donation < minimum contribution');
-        it('should add address to approvers if donation >= minimum contribution');
+        it.skip('should require that manager not be allowed to contribute');
+        it('should increase balance of account by donation made', async () => {
+            let balanceBefore = await web3.eth.getBalance(contract.options.address);
+            await contract.methods.contribute()
+                .send({ from: accounts[1], value: web3.utils.toWei('0.0100001', 'ether') });
+            let balanceAfter = await web3.eth.getBalance(contract.options.address);
+            expect( parseInt(balanceAfter) - parseInt(balanceBefore) ).to.equal( parseInt(web3.utils.toWei('0.0100001', 'ether')) );
+            
+            // another donation just to be sure
+            balanceBefore = balanceAfter;
+            await contract.methods.contribute()
+                .send({ from: accounts[2], value: web3.utils.toWei('0.0000050', 'ether') });
+            balanceAfter = await web3.eth.getBalance(contract.options.address);
+            expect( parseInt(balanceAfter) - parseInt(balanceBefore) ).to.equal( parseInt(web3.utils.toWei('0.0000050', 'ether')) );
+        });
+        it('should not add address to approvers array if donation < minimum contribution', async () => {
+            await contract.methods.contribute()
+                .send({ from: accounts[1], value: web3.utils.toWei('0.009999', 'ether') });
+            let approvers = await contract.methods.getApprovers().call();
+            expect(approvers.length).to.equal(0);
+
+            await contract.methods.contribute()
+                .send({ from: accounts[1] });
+            approvers = await contract.methods.getApprovers().call();
+            expect(approvers.length).to.equal(0);
+        });
+        it('should add address to approvers if donation >= minimum contribution', async () => {
+            await contract.methods.contribute()
+                .send({ from: accounts[1], value: web3.utils.toWei('0.010000001', 'ether') });
+            let approvers = await contract.methods.getApprovers().call();
+            expect(approvers.length).to.equal(1);
+
+            await contract.methods.contribute()
+                .send({ from: accounts[1], value: web3.utils.toWei('1', 'ether') });
+            approvers = await contract.methods.getApprovers().call();
+            expect(approvers.length).to.equal(2);
+        });
     });
 
     describe('createRequest', () => {

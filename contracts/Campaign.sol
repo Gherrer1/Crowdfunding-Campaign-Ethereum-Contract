@@ -19,6 +19,12 @@ contract Campaign {
         return approvers;
     }
 
+    function contribute() public payable {
+        if(msg.value >= minimumContribution) {
+            approvers.push(msg.sender);
+        }
+    }
+
     // hmm we cant yet return struct objects. There's a work around where you return all the fields individually,
     // but thats kinda lame. let's see what Stephen has to say.
     // function getRequests() public view returns (Requestq[]) {
