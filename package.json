@@ -20,7 +20,8 @@
   },
   "homepage": "https://github.com/Gherrer1/Crowdfunding-Campaign-Ethereum-Contract#readme",
   "devDependencies": {
-    "ganache-cli": "^6.1.8",
+    "chai": "^4.2.0",
+    "ganache-cli": "^6.0.3",
     "mocha": "^5.2.0"
   },
   "dependencies": {
