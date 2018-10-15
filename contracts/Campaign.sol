@@ -3,11 +3,16 @@ pragma solidity ^0.4.17;
 contract Campaign {
     address public manager;
     uint public minimumContribution;
-    address[] public approvers;
-    Requestq[] public requests;
+    mapping(address => bool) public approvers;
+    Request[] public requests;
     
-    struct Requestq {
-        address vendorAddress;
+    struct Request {
+        string description;
+        address recipient;
+        uint value;
+        bool complete;
+        mapping(address => bool) approvals;
+        uint approvalCount;
     }
     
     function Campaign(uint minContribution) public {
@@ -15,14 +20,14 @@ contract Campaign {
         minimumContribution = minContribution;
     }
 
-    function getApprovers() public view returns (address[]) {
-        return approvers;
+    function isApprover(address user) public view returns (bool) {
+        return approvers[user];
     }
 
     function contribute() public payable {
-        if(msg.value >= minimumContribution) {
-            approvers.push(msg.sender);
-        }
+        require(msg.value > minimumContribution, "Below minimum contribution");
+
+        approvers[msg.sender] = true;
     }
 
     // hmm we cant yet return struct objects. There's a work around where you return all the fields individually,
