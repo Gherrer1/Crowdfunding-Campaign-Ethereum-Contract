@@ -1,0 +1,30 @@
+{
+  "name": "crowdfunding-campaign-ethereum-contract",
+  "version": "1.0.0",
+  "description": "Smart contract for a crowdfunding campaign for the Ethereum blockchain",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha test -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gherrer1/Crowdfunding-Campaign-Ethereum-Contract.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Gherrer1/Crowdfunding-Campaign-Ethereum-Contract/issues"
+  },
+  "homepage": "https://github.com/Gherrer1/Crowdfunding-Campaign-Ethereum-Contract#readme",
+  "devDependencies": {
+    "ganache-cli": "^6.1.8",
+    "mocha": "^5.2.0"
+  },
+  "dependencies": {
+    "solc": "^0.4.25",
+    "web3": "^1.0.0-beta.36"
+  }
+}
