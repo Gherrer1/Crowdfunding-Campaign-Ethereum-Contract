@@ -36,8 +36,8 @@ describe('Campaign Contract', () => {
             expect(minContribution).to.equal(expectedValue);
         });
         it('storage variable: requests = array of Request struct should be empty', async () => {
-            const requests = await contract.methods.getRequests().call();
-            expect(requests).to.deep.equal([]);
+            const numRequests = await contract.methods.getNumRequests().call();
+            expect(numRequests).to.equal('0');
         });
     });
 
@@ -140,15 +140,62 @@ describe('Campaign Contract', () => {
     });
 
     describe('approveRequest', () => {
-        it('should throw error if invalid index is passed in', () => {
-            let promise = contract.methods.approveRequest(4)
-                .send({ from: accounts[1], gas: '1000000' });
-            throw new Error('unimplemented');
+        beforeEach(async () => {
+            // create requests with vendors: 4, 5, 6
+            await contract.methods.createRequest('To pay alibaba', web3.utils.toWei('0.01', 'ether'), accounts[4])
+                .send({ from: accounts[0], gas: '1000000' });
+            await contract.methods.createRequest('To pay shopify', web3.utils.toWei('0.01', 'ether'), accounts[5])
+                .send({ from: accounts[0], gas: '1000000' });
+            await contract.methods.createRequest('To pay developers', web3.utils.toWei('0.01', 'ether'), accounts[6])
+                .send({ from: accounts[0], gas: '1000000' });
+
+            // get some approvers in there: 1, 2, 3
+            await contract.methods.contribute()
+                .send({ from: accounts[1], value: web3.utils.toWei('0.0101', 'ether'), gas: '1000000' });
+            await contract.methods.contribute()
+                .send({ from: accounts[2], value: web3.utils.toWei('0.0101', 'ether'), gas: '1000000' });
+            await contract.methods.contribute()
+                .send({ from: accounts[3], value: web3.utils.toWei('0.0101', 'ether'), gas: '1000000' });
+
+            // approver 2 has already approved request 2
+            await contract.methods.approveRequest(2)
+                .send({ from: accounts[2], gas: '1000000' });
         });
-        it('should require that only members of approvers storage mapping can call it');
-        it('should require that user hasnt voted on that request yet');
-        it('should add user address to Request struc\'s approvers field');
-        it('should increment an approvalCount field');
+        it('should throw error if invalid index is passed in', () => {
+            let promise = contract.methods.approveRequest(3)
+                .send({ from: accounts[1], gas: '1000000' });
+            expect(promise).to.be.rejectedWith(/invalid opcode/);
+        });
+        it('should require that only members of approvers storage mapping can call it', () => {
+            let promise = contract.methods.approveRequest(2)
+                .send({ from: accounts[4], gas: '1000000' });
+            expect(promise).to.be.rejectedWith(/revert/);
+        });
+        it('should require that user hasnt voted on that request yet', () => {
+            let promise = contract.methods.approveRequest(2)
+                .send({ from: accounts[2], gas: '1000000' });
+            expect(promise).to.be.rejectedWith(/revert/);
+        });
+        it('should add user address to Request struc\'s approvers field', async () => {
+            let didUserVoteOnRequest = await contract.methods.getUsersVoteForRequest(2, accounts[3]).call();
+            expect(didUserVoteOnRequest).to.be.false;
+
+            await contract.methods.approveRequest(2)
+                .send({ from: accounts[3], gas: '1000000' });
+            
+            didUserVoteOnRequest = await contract.methods.getUsersVoteForRequest(2, accounts[3]).call();
+            expect(didUserVoteOnRequest).to.be.true;
+        });
+        it('should increment an approvalCount field', async () => {
+            let approvalCount = await contract.methods.getApprovalCountForRequest(2).call();
+            expect(approvalCount).to.equal('1');
+
+            await contract.methods.approveRequest(2)
+                .send({ from: accounts[3], gas: '1000000' });
+            
+            approvalCount = await contract.methods.getApprovalCountForRequest(2).call();
+            expect(approvalCount).to.equal('2');
+        });
     });
 
     describe('finalizeRequest', () => {

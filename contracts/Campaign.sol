@@ -38,6 +38,24 @@ contract Campaign {
         return requests.length;
     }
 
+    function approveRequest(uint index) public {
+        require(approvers[msg.sender], "You must be an approver to do that");
+
+        Request storage targetRequest = requests[index];
+        require(targetRequest.approvals[msg.sender] == false, "You've already voted on this request");
+
+        targetRequest.approvals[msg.sender] = true;
+        targetRequest.approvalCount++;
+    } 
+
+    function getApprovalCountForRequest(uint index) public view returns (uint) {
+        return requests[index].approvalCount;
+    }
+
+    function getUsersVoteForRequest(uint index, address user) public view returns (bool) {
+        return requests[index].approvals[user];
+    }
+
     function isApprover(address user) public view returns (bool) {
         return approvers[user];
     }
