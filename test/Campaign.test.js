@@ -105,13 +105,50 @@ describe('Campaign Contract', () => {
     });
 
     describe('createRequest', () => {
-        it('should require that manager call it');
-        it('should add Request struct to request storage array');
+        it('should require that manager call it', () => {
+            let resolvePromise = contract.methods.createRequest(
+                'To pay alibaba',
+                web3.utils.toWei('0.01', 'ether'),
+                accounts[4],
+            ).send({ from: accounts[0], gas: '1000000' });
+
+            let rejectPromise = contract.methods.createRequest(
+                'To pay alibaba',
+                web3.utils.toWei('0.01', 'ether'),
+                accounts[4]
+            ).send({ from: accounts[1], gas: '1000000' });
+
+            return Promise.all([
+                expect(resolvePromise).to.be.fulfilled,
+                expect(rejectPromise).to.be.rejectedWith(/revert/),
+            ]);
+        });
+        it('should add Request struct to request storage array', async () => {
+            let numRequestsBefore = await contract.methods.getNumRequests().call();
+            expect(numRequestsBefore).to.equal('0');
+            await contract.methods.createRequest('To pay alibaba', web3.utils.toWei('0.01', 'ether'), accounts[4])
+                .send({ from: accounts[0], gas: '1000000' });
+            let numRequestsAfter = await contract.methods.getNumRequests().call();
+            expect(numRequestsAfter).to.equal('1');
+
+            numRequestsBefore = numRequestsAfter;
+            await contract.methods.createRequest('To pay aliexpress', web3.utils.toWei('0.01', 'ether'), accounts[4])
+                .send({ from: accounts[0], gas: '1000000' });
+            numRequestsAfter = await contract.methods.getNumRequests().call();
+            expect(numRequestsAfter).to.equal('2');
+        });
     });
 
     describe('approveRequest', () => {
-        it('should require that only members of approvers storage array can call it');
+        it('should throw error if invalid index is passed in', () => {
+            let promise = contract.methods.approveRequest(4)
+                .send({ from: accounts[1], gas: '1000000' });
+            throw new Error('unimplemented');
+        });
+        it('should require that only members of approvers storage mapping can call it');
+        it('should require that user hasnt voted on that request yet');
         it('should add user address to Request struc\'s approvers field');
+        it('should increment an approvalCount field');
     });
 
     describe('finalizeRequest', () => {

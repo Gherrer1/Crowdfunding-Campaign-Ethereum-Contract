@@ -20,6 +20,24 @@ contract Campaign {
         minimumContribution = minContribution;
     }
 
+    function createRequest(string desc, uint val, address vendorAddress) public {
+        require(msg.sender == manager, "Only the manager can do this.");
+
+        Request memory newRequest = Request({
+            description: desc,
+            value: val,
+            recipient: vendorAddress,
+            approvalCount: 0,
+            complete: false
+        });
+
+        requests.push(newRequest);
+    }
+
+    function getNumRequests() public view returns (uint) {
+        return requests.length;
+    }
+
     function isApprover(address user) public view returns (bool) {
         return approvers[user];
     }
