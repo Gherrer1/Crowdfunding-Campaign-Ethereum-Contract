@@ -221,7 +221,7 @@ describe('Campaign Contract', () => {
         });
     });
 
-    describe.only('finalizeRequest', () => {
+    describe('finalizeRequest', () => {
         beforeEach(async () => {
             // create requests with vendors: 4, 5, 6
             await contract.methods.createRequest('To pay alibaba', web3.utils.toWei('0.01', 'ether'), accounts[4])
@@ -294,8 +294,12 @@ describe('Campaign Contract', () => {
         it('should send Request.value to vendor address and should mark Request.complete as true', async () => {
             let contractBalance = await web3.eth.getBalance(contract.options.address);
             expect(contractBalance).to.equal( web3.utils.toWei('0.0303', 'ether') );
-            let completeStatus = (await contract.methods.getRequest(2).call())['2'];
+            let requestData = await contract.methods.getRequest(2).call();
+            let completeStatus = requestData['2'];
             expect(completeStatus).to.be.false;
+            let requestValue = requestData['1'];
+            let vendor = requestData['4'];
+            let vendorBalanceBefore = await web3.eth.getBalance(vendor);
 
             // get one more approval bc of 50%+ requirement
             await contract.methods.approveRequest(2)
@@ -308,6 +312,9 @@ describe('Campaign Contract', () => {
 
             completeStatus = (await contract.methods.getRequest(2).call())['2'];
             expect(completeStatus).to.be.true;
+
+            const vendorBalanceAfter = await web3.eth.getBalance(vendor);
+            expect( parseInt(vendorBalanceAfter) ).to.equal( parseInt(vendorBalanceBefore) + parseInt(requestValue) );
         });
         it('should require that contract is not already complete', async () => {
             // contribute alot so contract has more than enough value to send
