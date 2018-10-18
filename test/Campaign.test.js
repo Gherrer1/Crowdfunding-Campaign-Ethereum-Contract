@@ -221,7 +221,7 @@ describe('Campaign Contract', () => {
         });
     });
 
-    describe('finalizeRequest', () => {
+    describe.only('finalizeRequest', () => {
         beforeEach(async () => {
             // create requests with vendors: 4, 5, 6
             await contract.methods.createRequest('To pay alibaba', web3.utils.toWei('0.01', 'ether'), accounts[4])
@@ -270,10 +270,12 @@ describe('Campaign Contract', () => {
 
             throw new Error('finalizeRequest() should have thrown');
         });
-        it('should require that 50%+ approvers have voted yes', async () => {
+        it('should require that greater than 50% approvers have voted yes', async () => {
             let approversForRequest = (await contract.methods.getRequest(2).call())['3'];
             let approversCount = await contract.methods.approversCount().call();
-            expect( parseInt(approversForRequest) / parseInt(approversCount) ).to.be.lessThan(0.50);
+            expect(approversForRequest).to.equal('1');
+            expect(approversCount).to.equal('3');
+            expect( parseInt(approversForRequest) ).to.be.lte( parseInt(approversCount) / 2);
 
             try {
                 await contract.methods.finalizeRequest(2)
@@ -282,8 +284,9 @@ describe('Campaign Contract', () => {
                 expect(e.message).to.match(/revert/);
 
                 await contract.methods.approveRequest(2).send({ from: accounts[3], gas: '1000000' });
-                await contract.methods.finalizeRequest(200)
+                await contract.methods.finalizeRequest(2)
                     .send({ from: accounts[0], gas: '1000000' });
+                return;
             }
 
             throw new Error('finalizeRequest() should have thrown because not enough approvals');
@@ -309,8 +312,9 @@ describe('Campaign Contract', () => {
         it('should require that contract is not already complete', async () => {
             // contribute alot so contract has more than enough value to send
             await contract.methods.contribute().send({ from: accounts[4], value: web3.utils.toWei('1', 'ether'), gas: '1000000' });
-            // get one more approval bc 50% requirement
+            // get two more approval bc 50% requirement (3 approvals out of 4 approvers)
             await contract.methods.approveRequest(2).send({ from: accounts[3], gas: '1000000' });
+            await contract.methods.approveRequest(2).send({ from: accounts[4], gas: '1000000' });
             // finalize request 2
             await contract.methods.finalizeRequest(2).send({ from: accounts[0], gas: '1000000' });
             // try finalizing it again but should get error

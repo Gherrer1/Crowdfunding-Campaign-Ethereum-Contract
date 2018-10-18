@@ -55,7 +55,7 @@ contract Campaign {
         Request storage targetRequest = requests[index];
         require(targetRequest.complete == false, "This request is already complete.");
         require(targetRequest.value <= address(this).balance, "Contract balance is too low to fulfill this request");
-        require(targetRequest.approvalCount >= (approversCount / 2), "50% of approvers must approve of this before it can complete");
+        require(targetRequest.approvalCount > (approversCount / 2), "50% of approvers must approve of this before it can complete");
 
         targetRequest.recipient.transfer(targetRequest.value);
         targetRequest.complete = true;
