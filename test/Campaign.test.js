@@ -95,6 +95,29 @@ describe('Campaign Contract', () => {
             isApprover = await contract.methods.isApprover(accounts[2]).call();
             expect(isApprover).to.true;
         });
+        it('should increment approversCount if contributer was not previously an approver', async () => {
+            let approversCount = await contract.methods.approversCount().call();
+            expect(approversCount).to.equal('0');
+
+            await contract.methods.contribute()
+                .send({ from: accounts[1], value: web3.utils.toWei('0.01000001', 'ether') });
+
+            approversCount = await contract.methods.approversCount().call();
+            expect(approversCount).to.equal('1');
+        });
+        it('should not increment approversCount if contributer was previously an approver', async () => {
+            await contract.methods.contribute()
+                .send({ from: accounts[1], value: web3.utils.toWei('0.01000001', 'ether') });
+
+            approversCount = await contract.methods.approversCount().call();
+            expect(approversCount).to.equal('1');
+
+            await contract.methods.contribute()
+                .send({ from: accounts[1], value: web3.utils.toWei('0.01000001', 'ether') });
+
+            approversCount = await contract.methods.approversCount().call();
+            expect(approversCount).to.equal('1');
+        });
         it('should increase balance of account by donation made', async () => {
             let balanceBefore = await web3.eth.getBalance(contract.options.address);
             await contract.methods.contribute()

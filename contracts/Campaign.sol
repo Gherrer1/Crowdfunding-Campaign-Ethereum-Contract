@@ -4,6 +4,7 @@ contract Campaign {
     address public manager;
     uint public minimumContribution;
     mapping(address => bool) public approvers;
+    uint public approversCount;
     Request[] public requests;
     
     struct Request {
@@ -18,6 +19,7 @@ contract Campaign {
     function Campaign(uint minContribution) public {
         manager = msg.sender;
         minimumContribution = minContribution;
+        approversCount = 0;
     }
 
     function createRequest(string desc, uint val, address vendorAddress) public {
@@ -84,6 +86,9 @@ contract Campaign {
     function contribute() public payable {
         require(msg.value > minimumContribution, "Below minimum contribution");
 
+        if(approvers[msg.sender] == false) {
+            approversCount++;
+        }
         approvers[msg.sender] = true;
     }
 
