@@ -48,8 +48,29 @@ contract Campaign {
         targetRequest.approvalCount++;
     } 
 
+    function finalizeRequest(uint index) public {
+        require(msg.sender == manager, "Only the contract manager can finalize a request");
+        Request storage targetRequest = requests[index];
+        require(targetRequest.complete == false, "This request is already complete.");
+        require(targetRequest.value <= address(this).balance, "Contract balance is too low to fulfill this request");
+
+        targetRequest.recipient.transfer(targetRequest.value);
+        targetRequest.complete = true;
+    }
+
+    function getRequestValue(uint index) public view returns (uint) {
+        return requests[index].value;
+    }
+
     function getApprovalCountForRequest(uint index) public view returns (uint) {
         return requests[index].approvalCount;
+    }
+    
+    // => (description, value, complete, approversCount);
+    function getRequest(uint index) public view returns (string, uint, bool, uint) {
+        Request storage request = requests[index];
+
+        return (request.description, request.value, request.complete, request.approvalCount);
     }
 
     function getUsersVoteForRequest(uint index, address user) public view returns (bool) {

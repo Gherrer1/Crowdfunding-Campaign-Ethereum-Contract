@@ -199,8 +199,111 @@ describe('Campaign Contract', () => {
     });
 
     describe('finalizeRequest', () => {
-        it('should require that manager call it');
-        it('should require that enough approvers have voted yes');
-        it('should send Request.value to vendor address');
+        beforeEach(async () => {
+            // create requests with vendors: 4, 5, 6
+            await contract.methods.createRequest('To pay alibaba', web3.utils.toWei('0.01', 'ether'), accounts[4])
+                .send({ from: accounts[0], gas: '1000000' });
+            await contract.methods.createRequest('To pay shopify', web3.utils.toWei('0.01', 'ether'), accounts[5])
+                .send({ from: accounts[0], gas: '1000000' });
+            await contract.methods.createRequest('To pay developers', web3.utils.toWei('0.03', 'ether'), accounts[6])
+                .send({ from: accounts[0], gas: '1000000' });
+
+            // get some approvers in there: 1, 2, 3
+            await contract.methods.contribute()
+                .send({ from: accounts[1], value: web3.utils.toWei('0.0101', 'ether'), gas: '1000000' });
+            await contract.methods.contribute()
+                .send({ from: accounts[2], value: web3.utils.toWei('0.0101', 'ether'), gas: '1000000' });
+            await contract.methods.contribute()
+                .send({ from: accounts[3], value: web3.utils.toWei('0.0101', 'ether'), gas: '1000000' });
+
+            // approver 2 has already approved request 2
+            await contract.methods.approveRequest(2)
+                .send({ from: accounts[2], gas: '1000000' });
+        });
+        it('must be called with valid request index', () => {
+            let promise = contract.methods.finalizeRequest(5)
+                .send({ from: accounts[0], gas: '1000000' });
+            return expect(promise).to.be.rejectedWith(/invalid opcode/);
+        });
+        it('should require that manager call it', () => {
+            let promise = contract.methods.finalizeRequest(2)
+                .send({ from: accounts[1], gas: '1000000' });
+            return expect(promise).to.be.rejectedWith(/revert/);
+        });
+        it('should require that contract balance > request value', async () => {
+            // create contract with absurd value
+            await contract.methods.createRequest('Really expensive', web3.utils.toWei('0.04', 'ether'), accounts[7])
+                .send({ from: accounts[0], gas: '1000000' });
+            const contractBalance = await web3.eth.getBalance(contract.options.address);
+            const requestValue = await contract.methods.getRequestValue(3).call();
+            expect(parseInt(requestValue)).to.be.greaterThan(parseInt(contractBalance));
+
+            try {
+                await contract.methods.finalizeRequest(3)
+                    .send({ from: accounts[0], gas: '1000000' });
+            } catch(e) {
+                return expect(e.message).to.match(/revert/);
+            }
+
+            throw new Error('finalizeRequest() should have thrown');
+        });
+        it('should require that 51%+ approvers have voted yes', async () => {
+            // this one I'm not too sure about.
+            // sanity checks
+            let numApprovalsForRequest = await contract.methods.getApprovalCountForRequest(2).call();
+            expect(numApprovalsForRequest).to.equal('1');
+            let numApprovers = await contract.methods.getNumApprovers().call();
+            expect(numApprovers).to.equal('3');
+            try {
+                await contract.methods.finalizeRequest(2)
+                    .send({ from: accounts[0], gas: '1000000' });
+            } catch(e) {
+                expect(e).to.match(/blahhhh/);
+
+                // now make sure it works when you add one more approver
+                // note: might have to contribute more to the contract first
+                await contract.methods.approveRequest(2)
+                    .send({ from: accounts[3], gas: '1000000' });
+                
+                await contract.methods.finalizeRequest(2)
+                    .send({ from: accounts[0], gas: '1000000' });
+            }
+        });
+        it('should send Request.value to vendor address and should mark Request.complete as true', async () => {
+            let contractBalance = await web3.eth.getBalance(contract.options.address);
+            expect(contractBalance).to.equal( web3.utils.toWei('0.0303', 'ether') );
+            let contractData = await contract.methods.getRequest(2).call();
+            let completeStatus = contractData['2'];
+            expect(completeStatus).to.be.false;
+
+            // get one more approval bc of 51%+ requirement
+            await contract.methods.approveRequest(2)
+                .send({ from: accounts[3], gas: '1000000' });
+            await contract.methods.finalizeRequest(2)
+                .send({ from: accounts[0], gas: '1000000' });
+
+            contractBalance = await web3.eth.getBalance(contract.options.address);
+            expect(contractBalance).to.equal( web3.utils.toWei('0.0003', 'ether') );
+
+            contractData = await contract.methods.getRequest(2).call();
+            completeStatus = contractData['2'];
+            expect(completeStatus).to.be.true;
+        });
+        it('should require that contract is not already complete', async () => {
+            // contribute alot so contract has more than enough value to send
+            await contract.methods.contribute().send({ from: accounts[4], value: web3.utils.toWei('1', 'ether'), gas: '1000000' });
+            // get one more approval bc 51% requirement
+            await contract.methods.approveRequest(2).send({ from: accounts[3], gas: '1000000' });
+            // finalize request 2
+            await contract.methods.finalizeRequest(2).send({ from: accounts[0], gas: '1000000' });
+            // try finalizing it again but should get error
+            try {
+                await contract.methods.finalizeRequest(2).send({ from: accounts[0], gas: '1000000' });
+            } catch(e) {
+                return expect(e.message).to.match(/revert/);
+            }
+
+            throw new Error('finalizeRequest() should have thrown because it should be complete');
+        });
     });
 });
