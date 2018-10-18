@@ -210,13 +210,13 @@ describe('Campaign Contract', () => {
             expect(didUserVoteOnRequest).to.be.true;
         });
         it('should increment an approvalCount field', async () => {
-            let approvalCount = await contract.methods.getApprovalCountForRequest(2).call();
+            let approvalCount = (await contract.methods.getRequest(2).call())['3'];
             expect(approvalCount).to.equal('1');
 
             await contract.methods.approveRequest(2)
                 .send({ from: accounts[3], gas: '1000000' });
             
-            approvalCount = await contract.methods.getApprovalCountForRequest(2).call();
+            approvalCount = (await contract.methods.getRequest(2).call())['3'];
             expect(approvalCount).to.equal('2');
         });
     });
@@ -258,7 +258,7 @@ describe('Campaign Contract', () => {
             await contract.methods.createRequest('Really expensive', web3.utils.toWei('0.04', 'ether'), accounts[7])
                 .send({ from: accounts[0], gas: '1000000' });
             const contractBalance = await web3.eth.getBalance(contract.options.address);
-            const requestValue = await contract.methods.getRequestValue(3).call();
+            const requestValue = (await contract.methods.getRequest(3).call())['1'];
             expect(parseInt(requestValue)).to.be.greaterThan(parseInt(contractBalance));
 
             try {
@@ -270,36 +270,31 @@ describe('Campaign Contract', () => {
 
             throw new Error('finalizeRequest() should have thrown');
         });
-        it('should require that 51%+ approvers have voted yes', async () => {
-            // this one I'm not too sure about.
-            // sanity checks
-            let numApprovalsForRequest = await contract.methods.getApprovalCountForRequest(2).call();
-            expect(numApprovalsForRequest).to.equal('1');
-            let numApprovers = await contract.methods.getNumApprovers().call();
-            expect(numApprovers).to.equal('3');
+        it('should require that 50%+ approvers have voted yes', async () => {
+            let approversForRequest = (await contract.methods.getRequest(2).call())['3'];
+            let approversCount = await contract.methods.approversCount().call();
+            expect( parseInt(approversForRequest) / parseInt(approversCount) ).to.be.lessThan(0.50);
+
             try {
                 await contract.methods.finalizeRequest(2)
                     .send({ from: accounts[0], gas: '1000000' });
             } catch(e) {
-                expect(e).to.match(/blahhhh/);
+                expect(e.message).to.match(/revert/);
 
-                // now make sure it works when you add one more approver
-                // note: might have to contribute more to the contract first
-                await contract.methods.approveRequest(2)
-                    .send({ from: accounts[3], gas: '1000000' });
-                
-                await contract.methods.finalizeRequest(2)
+                await contract.methods.approveRequest(2).send({ from: accounts[3], gas: '1000000' });
+                await contract.methods.finalizeRequest(200)
                     .send({ from: accounts[0], gas: '1000000' });
             }
+
+            throw new Error('finalizeRequest() should have thrown because not enough approvals');
         });
         it('should send Request.value to vendor address and should mark Request.complete as true', async () => {
             let contractBalance = await web3.eth.getBalance(contract.options.address);
             expect(contractBalance).to.equal( web3.utils.toWei('0.0303', 'ether') );
-            let contractData = await contract.methods.getRequest(2).call();
-            let completeStatus = contractData['2'];
+            let completeStatus = (await contract.methods.getRequest(2).call())['2'];
             expect(completeStatus).to.be.false;
 
-            // get one more approval bc of 51%+ requirement
+            // get one more approval bc of 50%+ requirement
             await contract.methods.approveRequest(2)
                 .send({ from: accounts[3], gas: '1000000' });
             await contract.methods.finalizeRequest(2)
@@ -308,14 +303,13 @@ describe('Campaign Contract', () => {
             contractBalance = await web3.eth.getBalance(contract.options.address);
             expect(contractBalance).to.equal( web3.utils.toWei('0.0003', 'ether') );
 
-            contractData = await contract.methods.getRequest(2).call();
-            completeStatus = contractData['2'];
+            completeStatus = (await contract.methods.getRequest(2).call())['2'];
             expect(completeStatus).to.be.true;
         });
         it('should require that contract is not already complete', async () => {
             // contribute alot so contract has more than enough value to send
             await contract.methods.contribute().send({ from: accounts[4], value: web3.utils.toWei('1', 'ether'), gas: '1000000' });
-            // get one more approval bc 51% requirement
+            // get one more approval bc 50% requirement
             await contract.methods.approveRequest(2).send({ from: accounts[3], gas: '1000000' });
             // finalize request 2
             await contract.methods.finalizeRequest(2).send({ from: accounts[0], gas: '1000000' });

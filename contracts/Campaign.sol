@@ -55,19 +55,12 @@ contract Campaign {
         Request storage targetRequest = requests[index];
         require(targetRequest.complete == false, "This request is already complete.");
         require(targetRequest.value <= address(this).balance, "Contract balance is too low to fulfill this request");
+        require(targetRequest.approvalCount >= (approversCount / 2), "50% of approvers must approve of this before it can complete");
 
         targetRequest.recipient.transfer(targetRequest.value);
         targetRequest.complete = true;
     }
 
-    function getRequestValue(uint index) public view returns (uint) {
-        return requests[index].value;
-    }
-
-    function getApprovalCountForRequest(uint index) public view returns (uint) {
-        return requests[index].approvalCount;
-    }
-    
     // => (description, value, complete, approversCount);
     function getRequest(uint index) public view returns (string, uint, bool, uint) {
         Request storage request = requests[index];
@@ -91,10 +84,4 @@ contract Campaign {
         }
         approvers[msg.sender] = true;
     }
-
-    // hmm we cant yet return struct objects. There's a work around where you return all the fields individually,
-    // but thats kinda lame. let's see what Stephen has to say.
-    // function getRequests() public view returns (Requestq[]) {
-    //     return requests;
-    // }
 }
