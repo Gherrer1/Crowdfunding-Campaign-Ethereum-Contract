@@ -346,4 +346,37 @@ describe('Campaign Contract', () => {
             throw new Error('finalizeRequest() should have thrown because it should be complete');
         });
     });
+
+    describe.only('end to end', () => {
+        it('processes request', async () => {
+            const contributer = accounts[5];
+
+            let isApprover = await campaign.methods.approvers(contributer).call();
+            expect(isApprover).to.be.false;
+            // contribute
+            await campaign.methods.contribute().send({ from: contributer, value: web3.utils.toWei('0.010001', 'ether') });
+            isApprover = await campaign.methods.approvers(contributer).call();
+            let balanceBefore = await web3.eth.getBalance(campaign.options.address);
+            expect(isApprover).to.be.true;
+            expect(balanceBefore).to.equal( web3.utils.toWei('0.010001', 'ether') );
+            // create request
+            await campaign.methods.createRequest('Blahhh', web3.utils.toWei('0.005', 'ether'), accounts[6]).send({
+                from: accounts[0], gas: '1000000'
+            });
+            let request = await campaign.methods.requests(0).call();
+            expect(request.description).to.equal('Blahhh');
+            expect(request.complete).to.be.false;
+            expect(request.approvalCount).to.equal('0');
+            // approve request
+            await campaign.methods.approveRequest(0).send({ from: contributer, gas: '1000000' });
+            request = await campaign.methods.requests(0).call();
+            expect(request.approvalCount).to.equal('1');
+            // finalize request
+            await campaign.methods.finalizeRequest(0).send({ from: accounts[0], gas: '1000000' });
+            request = await campaign.methods.requests(0).call();
+            expect(request.complete).to.be.true;
+            let balance = await web3.eth.getBalance(campaign.options.address);
+            expect(parseInt(balance)).to.equal(parseInt(balanceBefore) - parseInt(web3.utils.toWei('0.005', 'ether')));
+        });
+    });
 });
