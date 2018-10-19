@@ -7,8 +7,8 @@ const { expect } = chai;
 
 const provider = ganache.provider();
 const web3 = new Web3(provider);
-const compiledCampaign = require('../build/campaign.json');
-const compiledFactory = require('../build/factory.json');
+const compiledCampaign = require('../ethereum/build/campaign.json');
+const compiledFactory = require('../ethereum/build/factory.json');
 
 describe('Campaign Contract', () => {
     let factory;
@@ -347,7 +347,7 @@ describe('Campaign Contract', () => {
         });
     });
 
-    describe.only('end to end', () => {
+    describe('end to end', () => {
         it('processes request', async () => {
             const contributer = accounts[5];
 
