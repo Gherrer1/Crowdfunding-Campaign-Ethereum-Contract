@@ -75,13 +75,6 @@ contract Campaign {
         targetRequest.complete = true;
     }
 
-    // => (description, value, complete, approversCount);
-    function getRequest(uint index) public view returns (string, uint, bool, uint, address) {
-        Request storage request = requests[index];
-
-        return (request.description, request.value, request.complete, request.approvalCount, request.recipient);
-    }
-
     function getUsersVoteForRequest(uint index, address user) public view returns (bool) {
         return requests[index].approvals[user];
     }
