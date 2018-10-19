@@ -7,36 +7,52 @@ const { expect } = chai;
 
 const provider = ganache.provider();
 const web3 = new Web3(provider);
-const { interface, bytecode } = require('../build/campaign.json');
+const compiledCampaign = require('../build/campaign.json');
+const compiledFactory = require('../build/factory.json');
 
 describe('Campaign Contract', () => {
+    let factory;
+    let campaignAddress;
+    let campaign;
     let accounts;
-    let contract;
     beforeEach(async () => {
         accounts = await web3.eth.getAccounts();
-        contract = await new web3.eth.Contract(JSON.parse(interface))
-            .deploy({ data: bytecode, arguments: [web3.utils.toWei('0.01', 'ether'), accounts[0]] })
+        factory = await new web3.eth.Contract(JSON.parse(compiledFactory.interface))
+            .deploy({ data: compiledFactory.bytecode })
+            .send({ from: accounts[0], gas: '2000000' });
+        await factory.methods.createCampaign( web3.utils.toWei('0.01', 'ether') )
             .send({ from: accounts[0], gas: '1000000' });
 
-        contract.setProvider(provider);
+        factory.setProvider(provider);
+
+        [campaignAddress] = await factory.methods.getDeployedContracts().call();
+        campaign = await new web3.eth.Contract(JSON.parse(compiledCampaign.interface), campaignAddress);
+        campaign.setProvider(provider);
+
+        // contract = await new web3.eth.Contract(JSON.parse(interface))
+        //     .deploy({ data: bytecode, arguments: [web3.utils.toWei('0.01', 'ether'), accounts[0]] })
+        //     .send({ from: accounts[0], gas: '1000000' });
+
+        // contract.setProvider(provider);
     });
 
     describe('initialize', () => {
-        it('should deploy', () => {
-            expect(contract.options.address).to.exist;
+        it('deploys factory and campaign', () => {
+            expect(factory.options.address).to.exist;
+            expect(campaign.options.address).to.exist;
         });
         it('storage variable: manager = user who deployed contract', async () => {
-            const manager = await contract.methods.manager().call();
+            const manager = await campaign.methods.manager().call();
             expect(manager).to.equal(accounts[0]);
         });
         it('storage variable: minimumContribution = uint value we set', async () => {
             // interesting: minContribution is a string not a number
-            const minContribution = await contract.methods.minimumContribution().call();
+            const minContribution = await campaign.methods.minimumContribution().call();
             const expectedValue = web3.utils.toWei('0.01', 'ether');
             expect(minContribution).to.equal(expectedValue);
         });
         it('storage variable: requests = array of Request struct should be empty', async () => {
-            const numRequests = await contract.methods.getNumRequests().call();
+            const numRequests = await campaign.methods.getNumRequests().call();
             expect(numRequests).to.equal('0');
         });
     });
