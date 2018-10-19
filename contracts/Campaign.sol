@@ -1,5 +1,19 @@
 pragma solidity ^0.4.17;
 
+contract CampaignFactory {
+    address[] public deployedContracts;
+
+    function getDeployedContracts() public view returns (address[]) {
+        return deployedContracts;
+    }
+
+    function createCampaign(uint minContribution) public {
+        address newContractInstance = new Campaign(minContribution, msg.sender);
+
+        deployedContracts.push(newContractInstance);
+    }
+}
+
 contract Campaign {
     address public manager;
     uint public minimumContribution;
@@ -16,8 +30,8 @@ contract Campaign {
         uint approvalCount;
     }
     
-    function Campaign(uint minContribution) public {
-        manager = msg.sender;
+    function Campaign(uint minContribution, address creator) public {
+        manager = creator;
         minimumContribution = minContribution;
         approversCount = 0;
     }
