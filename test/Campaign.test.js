@@ -7,7 +7,7 @@ const { expect } = chai;
 
 const provider = ganache.provider();
 const web3 = new Web3(provider);
-const { interface, bytecode } = require('../compile');
+const { interface, bytecode } = require('../build/campaign.json');
 
 describe('Campaign Contract', () => {
     let accounts;
@@ -15,7 +15,7 @@ describe('Campaign Contract', () => {
     beforeEach(async () => {
         accounts = await web3.eth.getAccounts();
         contract = await new web3.eth.Contract(JSON.parse(interface))
-            .deploy({ data: bytecode, arguments: [web3.utils.toWei('0.01', 'ether')] })
+            .deploy({ data: bytecode, arguments: [web3.utils.toWei('0.01', 'ether'), accounts[0]] })
             .send({ from: accounts[0], gas: '1000000' });
 
         contract.setProvider(provider);
