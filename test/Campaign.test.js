@@ -28,12 +28,6 @@ describe('Campaign Contract', () => {
         [campaignAddress] = await factory.methods.getDeployedContracts().call();
         campaign = await new web3.eth.Contract(JSON.parse(compiledCampaign.interface), campaignAddress);
         campaign.setProvider(provider);
-
-        // contract = await new web3.eth.Contract(JSON.parse(interface))
-        //     .deploy({ data: bytecode, arguments: [web3.utils.toWei('0.01', 'ether'), accounts[0]] })
-        //     .send({ from: accounts[0], gas: '1000000' });
-
-        // contract.setProvider(provider);
     });
 
     describe('initialize', () => {
@@ -60,10 +54,10 @@ describe('Campaign Contract', () => {
     describe('contribute', () => {
         it.skip('should require that manager not be allowed to contribute');
         it('should throw error if contribution is less than minimum', () => {
-            let promise = contract.methods.contribute()
+            let promise = campaign.methods.contribute()
                 .send({ from: accounts[1], value: web3.utils.toWei('0.009999', 'ether') });
 
-            let secondPromise = contract.methods.contribute()
+            let secondPromise = campaign.methods.contribute()
                 .send({ from: accounts[1] });
 
             return Promise.all([
@@ -74,84 +68,86 @@ describe('Campaign Contract', () => {
         it('should return contribution to user if contribution less than minimum', async () => {
             const balanceBefore = await web3.eth.getBalance(accounts[1]);
             try {
-                await contract.methods.contribute()
-                .send({ from: accounts[1], value: web3.utils.toWei('0.009999', 'ether') });
-            } catch(e) {}
+                await campaign.methods.contribute()
+                    .send({ from: accounts[1], value: web3.utils.toWei('0.009999', 'ether') });
+            } catch(e) {
+                expect(e.message).to.match(/revert/);
+            }
             const balanceAfter = await web3.eth.getBalance(accounts[1]);
             const differenceCeiling = parseInt( web3.utils.toWei('0.009999', 'ether') );
             expect(balanceAfter - balanceBefore).to.be.lessThan(differenceCeiling);
         });
         it('should not add address to approvers mapping if donation < minimum contribution', async () => {
             try {
-                await contract.methods.contribute().send({
+                await campaign.methods.contribute().send({
                     from: accounts[1], value: web3.utils.toWei('0.009999', 'ether')
                 });
             } catch(e) {
-                const isApprover = await contract.methods.isApprover(accounts[1]).call();
+                const isApprover = await campaign.methods.isApprover(accounts[1]).call();
                 expect(isApprover).to.be.false;
             }
 
             try {
-                await contract.methods.contribute().send({
+                await campaign.methods.contribute().send({
                     from: accounts[1],
                 });
             } catch(e) {
-                const isApprover = await contract.methods.isApprover(accounts[1]).call();
+                const isApprover = await campaign.methods.isApprover(accounts[1]).call();
                 expect(isApprover).to.be.false;
             }
         });
         it('should add address to approvers if donation >= minimum contribution', async () => {
-            await contract.methods.contribute()
+            await campaign.methods.contribute()
                 .send({ from: accounts[1], value: web3.utils.toWei('0.010000001', 'ether') });
-            let isApprover = await contract.methods.isApprover(accounts[1]).call();
+            let isApprover = await campaign.methods.isApprover(accounts[1]).call();
             expect(isApprover).to.true;
 
-            await contract.methods.contribute()
+            await campaign.methods.contribute()
                 .send({ from: accounts[2], value: web3.utils.toWei('1', 'ether') });
-            isApprover = await contract.methods.isApprover(accounts[2]).call();
+            isApprover = await campaign.methods.isApprover(accounts[2]).call();
             expect(isApprover).to.true;
         });
         it('should increment approversCount if contributer was not previously an approver', async () => {
-            let approversCount = await contract.methods.approversCount().call();
+            let approversCount = await campaign.methods.approversCount().call();
             expect(approversCount).to.equal('0');
 
-            await contract.methods.contribute()
+            await campaign.methods.contribute()
                 .send({ from: accounts[1], value: web3.utils.toWei('0.01000001', 'ether') });
 
-            approversCount = await contract.methods.approversCount().call();
+            approversCount = await campaign.methods.approversCount().call();
             expect(approversCount).to.equal('1');
         });
         it('should not increment approversCount if contributer was previously an approver', async () => {
-            await contract.methods.contribute()
+            await campaign.methods.contribute()
                 .send({ from: accounts[1], value: web3.utils.toWei('0.01000001', 'ether') });
 
-            approversCount = await contract.methods.approversCount().call();
+            approversCount = await campaign.methods.approversCount().call();
             expect(approversCount).to.equal('1');
 
-            await contract.methods.contribute()
+            await campaign.methods.contribute()
                 .send({ from: accounts[1], value: web3.utils.toWei('0.01000001', 'ether') });
 
-            approversCount = await contract.methods.approversCount().call();
+            approversCount = await campaign.methods.approversCount().call();
             expect(approversCount).to.equal('1');
         });
         it('should increase balance of account by donation made', async () => {
-            let balanceBefore = await web3.eth.getBalance(contract.options.address);
-            await contract.methods.contribute()
+            let balanceBefore = await web3.eth.getBalance(campaign.options.address);
+            await campaign.methods.contribute()
                 .send({ from: accounts[1], value: web3.utils.toWei('0.0100001', 'ether') });
-            let balanceAfter = await web3.eth.getBalance(contract.options.address);
+            let balanceAfter = await web3.eth.getBalance(campaign.options.address);
             expect( parseInt(balanceAfter) - parseInt(balanceBefore) ).to.equal( parseInt(web3.utils.toWei('0.0100001', 'ether')) );
         });
     });
 
     describe('createRequest', () => {
         it('should require that manager call it', () => {
-            let resolvePromise = contract.methods.createRequest(
+            let resolvePromise = campaign.methods.createRequest(
                 'To pay alibaba',
                 web3.utils.toWei('0.01', 'ether'),
                 accounts[4],
             ).send({ from: accounts[0], gas: '1000000' });
 
-            let rejectPromise = contract.methods.createRequest(
+            let rejectPromise = campaign.methods.createRequest(
                 'To pay alibaba',
                 web3.utils.toWei('0.01', 'ether'),
                 accounts[4]
@@ -163,17 +159,17 @@ describe('Campaign Contract', () => {
             ]);
         });
         it('should add Request struct to request storage array', async () => {
-            let numRequestsBefore = await contract.methods.getNumRequests().call();
+            let numRequestsBefore = await campaign.methods.getNumRequests().call();
             expect(numRequestsBefore).to.equal('0');
-            await contract.methods.createRequest('To pay alibaba', web3.utils.toWei('0.01', 'ether'), accounts[4])
+            await campaign.methods.createRequest('To pay alibaba', web3.utils.toWei('0.01', 'ether'), accounts[4])
                 .send({ from: accounts[0], gas: '1000000' });
-            let numRequestsAfter = await contract.methods.getNumRequests().call();
+            let numRequestsAfter = await campaign.methods.getNumRequests().call();
             expect(numRequestsAfter).to.equal('1');
 
             numRequestsBefore = numRequestsAfter;
-            await contract.methods.createRequest('To pay aliexpress', web3.utils.toWei('0.01', 'ether'), accounts[4])
+            await campaign.methods.createRequest('To pay aliexpress', web3.utils.toWei('0.01', 'ether'), accounts[4])
                 .send({ from: accounts[0], gas: '1000000' });
-            numRequestsAfter = await contract.methods.getNumRequests().call();
+            numRequestsAfter = await campaign.methods.getNumRequests().call();
             expect(numRequestsAfter).to.equal('2');
         });
     });
@@ -181,58 +177,58 @@ describe('Campaign Contract', () => {
     describe('approveRequest', () => {
         beforeEach(async () => {
             // create requests with vendors: 4, 5, 6
-            await contract.methods.createRequest('To pay alibaba', web3.utils.toWei('0.01', 'ether'), accounts[4])
+            await campaign.methods.createRequest('To pay alibaba', web3.utils.toWei('0.01', 'ether'), accounts[4])
                 .send({ from: accounts[0], gas: '1000000' });
-            await contract.methods.createRequest('To pay shopify', web3.utils.toWei('0.01', 'ether'), accounts[5])
+            await campaign.methods.createRequest('To pay shopify', web3.utils.toWei('0.01', 'ether'), accounts[5])
                 .send({ from: accounts[0], gas: '1000000' });
-            await contract.methods.createRequest('To pay developers', web3.utils.toWei('0.01', 'ether'), accounts[6])
+            await campaign.methods.createRequest('To pay developers', web3.utils.toWei('0.01', 'ether'), accounts[6])
                 .send({ from: accounts[0], gas: '1000000' });
 
             // get some approvers in there: 1, 2, 3
-            await contract.methods.contribute()
+            await campaign.methods.contribute()
                 .send({ from: accounts[1], value: web3.utils.toWei('0.0101', 'ether'), gas: '1000000' });
-            await contract.methods.contribute()
+            await campaign.methods.contribute()
                 .send({ from: accounts[2], value: web3.utils.toWei('0.0101', 'ether'), gas: '1000000' });
-            await contract.methods.contribute()
+            await campaign.methods.contribute()
                 .send({ from: accounts[3], value: web3.utils.toWei('0.0101', 'ether'), gas: '1000000' });
 
             // approver 2 has already approved request 2
-            await contract.methods.approveRequest(2)
+            await campaign.methods.approveRequest(2)
                 .send({ from: accounts[2], gas: '1000000' });
         });
         it('should throw error if invalid index is passed in', () => {
-            let promise = contract.methods.approveRequest(3)
+            let promise = campaign.methods.approveRequest(3)
                 .send({ from: accounts[1], gas: '1000000' });
             expect(promise).to.be.rejectedWith(/invalid opcode/);
         });
         it('should require that only members of approvers storage mapping can call it', () => {
-            let promise = contract.methods.approveRequest(2)
+            let promise = campaign.methods.approveRequest(2)
                 .send({ from: accounts[4], gas: '1000000' });
             expect(promise).to.be.rejectedWith(/revert/);
         });
         it('should require that user hasnt voted on that request yet', () => {
-            let promise = contract.methods.approveRequest(2)
+            let promise = campaign.methods.approveRequest(2)
                 .send({ from: accounts[2], gas: '1000000' });
             expect(promise).to.be.rejectedWith(/revert/);
         });
         it('should add user address to Request struc\'s approvers field', async () => {
-            let didUserVoteOnRequest = await contract.methods.getUsersVoteForRequest(2, accounts[3]).call();
+            let didUserVoteOnRequest = await campaign.methods.getUsersVoteForRequest(2, accounts[3]).call();
             expect(didUserVoteOnRequest).to.be.false;
 
-            await contract.methods.approveRequest(2)
+            await campaign.methods.approveRequest(2)
                 .send({ from: accounts[3], gas: '1000000' });
             
-            didUserVoteOnRequest = await contract.methods.getUsersVoteForRequest(2, accounts[3]).call();
+            didUserVoteOnRequest = await campaign.methods.getUsersVoteForRequest(2, accounts[3]).call();
             expect(didUserVoteOnRequest).to.be.true;
         });
         it('should increment an approvalCount field', async () => {
-            let approvalCount = (await contract.methods.getRequest(2).call())['3'];
+            let approvalCount = (await campaign.methods.getRequest(2).call())['3'];
             expect(approvalCount).to.equal('1');
 
-            await contract.methods.approveRequest(2)
+            await campaign.methods.approveRequest(2)
                 .send({ from: accounts[3], gas: '1000000' });
             
-            approvalCount = (await contract.methods.getRequest(2).call())['3'];
+            approvalCount = (await campaign.methods.getRequest(2).call())['3'];
             expect(approvalCount).to.equal('2');
         });
     });
@@ -240,45 +236,45 @@ describe('Campaign Contract', () => {
     describe('finalizeRequest', () => {
         beforeEach(async () => {
             // create requests with vendors: 4, 5, 6
-            await contract.methods.createRequest('To pay alibaba', web3.utils.toWei('0.01', 'ether'), accounts[4])
+            await campaign.methods.createRequest('To pay alibaba', web3.utils.toWei('0.01', 'ether'), accounts[4])
                 .send({ from: accounts[0], gas: '1000000' });
-            await contract.methods.createRequest('To pay shopify', web3.utils.toWei('0.01', 'ether'), accounts[5])
+            await campaign.methods.createRequest('To pay shopify', web3.utils.toWei('0.01', 'ether'), accounts[5])
                 .send({ from: accounts[0], gas: '1000000' });
-            await contract.methods.createRequest('To pay developers', web3.utils.toWei('0.03', 'ether'), accounts[6])
+            await campaign.methods.createRequest('To pay developers', web3.utils.toWei('0.03', 'ether'), accounts[6])
                 .send({ from: accounts[0], gas: '1000000' });
 
             // get some approvers in there: 1, 2, 3
-            await contract.methods.contribute()
+            await campaign.methods.contribute()
                 .send({ from: accounts[1], value: web3.utils.toWei('0.0101', 'ether'), gas: '1000000' });
-            await contract.methods.contribute()
+            await campaign.methods.contribute()
                 .send({ from: accounts[2], value: web3.utils.toWei('0.0101', 'ether'), gas: '1000000' });
-            await contract.methods.contribute()
+            await campaign.methods.contribute()
                 .send({ from: accounts[3], value: web3.utils.toWei('0.0101', 'ether'), gas: '1000000' });
 
             // approver 2 has already approved request 2
-            await contract.methods.approveRequest(2)
+            await campaign.methods.approveRequest(2)
                 .send({ from: accounts[2], gas: '1000000' });
         });
         it('must be called with valid request index', () => {
-            let promise = contract.methods.finalizeRequest(5)
+            let promise = campaign.methods.finalizeRequest(5)
                 .send({ from: accounts[0], gas: '1000000' });
             return expect(promise).to.be.rejectedWith(/invalid opcode/);
         });
         it('should require that manager call it', () => {
-            let promise = contract.methods.finalizeRequest(2)
+            let promise = campaign.methods.finalizeRequest(2)
                 .send({ from: accounts[1], gas: '1000000' });
             return expect(promise).to.be.rejectedWith(/revert/);
         });
-        it('should require that contract balance > request value', async () => {
-            // create contract with absurd value
-            await contract.methods.createRequest('Really expensive', web3.utils.toWei('0.04', 'ether'), accounts[7])
+        it('should require that campaign balance > request value', async () => {
+            // create request with absurd value
+            await campaign.methods.createRequest('Really expensive', web3.utils.toWei('0.04', 'ether'), accounts[7])
                 .send({ from: accounts[0], gas: '1000000' });
-            const contractBalance = await web3.eth.getBalance(contract.options.address);
-            const requestValue = (await contract.methods.getRequest(3).call())['1'];
-            expect(parseInt(requestValue)).to.be.greaterThan(parseInt(contractBalance));
+            const campaignBalance = await web3.eth.getBalance(campaign.options.address);
+            const requestValue = (await campaign.methods.getRequest(3).call())['1'];
+            expect(parseInt(requestValue)).to.be.greaterThan(parseInt(campaignBalance));
 
             try {
-                await contract.methods.finalizeRequest(3)
+                await campaign.methods.finalizeRequest(3)
                     .send({ from: accounts[0], gas: '1000000' });
             } catch(e) {
                 return expect(e.message).to.match(/revert/);
@@ -287,20 +283,20 @@ describe('Campaign Contract', () => {
             throw new Error('finalizeRequest() should have thrown');
         });
         it('should require that greater than 50% approvers have voted yes', async () => {
-            let approversForRequest = (await contract.methods.getRequest(2).call())['3'];
-            let approversCount = await contract.methods.approversCount().call();
+            let approversForRequest = (await campaign.methods.getRequest(2).call())['3'];
+            let approversCount = await campaign.methods.approversCount().call();
             expect(approversForRequest).to.equal('1');
             expect(approversCount).to.equal('3');
             expect( parseInt(approversForRequest) ).to.be.lte( parseInt(approversCount) / 2);
 
             try {
-                await contract.methods.finalizeRequest(2)
+                await campaign.methods.finalizeRequest(2)
                     .send({ from: accounts[0], gas: '1000000' });
             } catch(e) {
                 expect(e.message).to.match(/revert/);
 
-                await contract.methods.approveRequest(2).send({ from: accounts[3], gas: '1000000' });
-                await contract.methods.finalizeRequest(2)
+                await campaign.methods.approveRequest(2).send({ from: accounts[3], gas: '1000000' });
+                await campaign.methods.finalizeRequest(2)
                     .send({ from: accounts[0], gas: '1000000' });
                 return;
             }
@@ -308,9 +304,9 @@ describe('Campaign Contract', () => {
             throw new Error('finalizeRequest() should have thrown because not enough approvals');
         });
         it('should send Request.value to vendor address and should mark Request.complete as true', async () => {
-            let contractBalance = await web3.eth.getBalance(contract.options.address);
-            expect(contractBalance).to.equal( web3.utils.toWei('0.0303', 'ether') );
-            let requestData = await contract.methods.getRequest(2).call();
+            let campaignBalance = await web3.eth.getBalance(campaign.options.address);
+            expect(campaignBalance).to.equal( web3.utils.toWei('0.0303', 'ether') );
+            let requestData = await campaign.methods.getRequest(2).call();
             let completeStatus = requestData['2'];
             expect(completeStatus).to.be.false;
             let requestValue = requestData['1'];
@@ -318,31 +314,31 @@ describe('Campaign Contract', () => {
             let vendorBalanceBefore = await web3.eth.getBalance(vendor);
 
             // get one more approval bc of 50%+ requirement
-            await contract.methods.approveRequest(2)
+            await campaign.methods.approveRequest(2)
                 .send({ from: accounts[3], gas: '1000000' });
-            await contract.methods.finalizeRequest(2)
+            await campaign.methods.finalizeRequest(2)
                 .send({ from: accounts[0], gas: '1000000' });
 
-            contractBalance = await web3.eth.getBalance(contract.options.address);
-            expect(contractBalance).to.equal( web3.utils.toWei('0.0003', 'ether') );
+            campaignBalance = await web3.eth.getBalance(campaign.options.address);
+            expect(campaignBalance).to.equal( web3.utils.toWei('0.0003', 'ether') );
 
-            completeStatus = (await contract.methods.getRequest(2).call())['2'];
+            completeStatus = (await campaign.methods.getRequest(2).call())['2'];
             expect(completeStatus).to.be.true;
 
             const vendorBalanceAfter = await web3.eth.getBalance(vendor);
             expect( parseInt(vendorBalanceAfter) ).to.equal( parseInt(vendorBalanceBefore) + parseInt(requestValue) );
         });
-        it('should require that contract is not already complete', async () => {
-            // contribute alot so contract has more than enough value to send
-            await contract.methods.contribute().send({ from: accounts[4], value: web3.utils.toWei('1', 'ether'), gas: '1000000' });
+        it('should require that request is not already complete', async () => {
+            // contribute alot so campaign has more than enough value to send
+            await campaign.methods.contribute().send({ from: accounts[4], value: web3.utils.toWei('1', 'ether'), gas: '1000000' });
             // get two more approval bc 50% requirement (3 approvals out of 4 approvers)
-            await contract.methods.approveRequest(2).send({ from: accounts[3], gas: '1000000' });
-            await contract.methods.approveRequest(2).send({ from: accounts[4], gas: '1000000' });
+            await campaign.methods.approveRequest(2).send({ from: accounts[3], gas: '1000000' });
+            await campaign.methods.approveRequest(2).send({ from: accounts[4], gas: '1000000' });
             // finalize request 2
-            await contract.methods.finalizeRequest(2).send({ from: accounts[0], gas: '1000000' });
+            await campaign.methods.finalizeRequest(2).send({ from: accounts[0], gas: '1000000' });
             // try finalizing it again but should get error
             try {
-                await contract.methods.finalizeRequest(2).send({ from: accounts[0], gas: '1000000' });
+                await campaign.methods.finalizeRequest(2).send({ from: accounts[0], gas: '1000000' });
             } catch(e) {
                 return expect(e.message).to.match(/revert/);
             }
