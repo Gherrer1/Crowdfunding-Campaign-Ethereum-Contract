@@ -79,10 +79,6 @@ contract Campaign {
         return requests[index].approvals[user];
     }
 
-    function isApprover(address user) public view returns (bool) {
-        return approvers[user];
-    }
-
     function contribute() public payable {
         require(msg.value > minimumContribution, "Below minimum contribution");
 

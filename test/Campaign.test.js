@@ -83,7 +83,7 @@ describe('Campaign Contract', () => {
                     from: accounts[1], value: web3.utils.toWei('0.009999', 'ether')
                 });
             } catch(e) {
-                const isApprover = await campaign.methods.isApprover(accounts[1]).call();
+                const isApprover = await campaign.methods.approvers(accounts[1]).call();
                 expect(isApprover).to.be.false;
             }
 
@@ -92,19 +92,19 @@ describe('Campaign Contract', () => {
                     from: accounts[1],
                 });
             } catch(e) {
-                const isApprover = await campaign.methods.isApprover(accounts[1]).call();
+                const isApprover = await campaign.methods.approvers(accounts[1]).call();
                 expect(isApprover).to.be.false;
             }
         });
         it('should add address to approvers if donation >= minimum contribution', async () => {
             await campaign.methods.contribute()
                 .send({ from: accounts[1], value: web3.utils.toWei('0.010000001', 'ether') });
-            let isApprover = await campaign.methods.isApprover(accounts[1]).call();
+            let isApprover = await campaign.methods.approvers(accounts[1]).call();
             expect(isApprover).to.true;
 
             await campaign.methods.contribute()
                 .send({ from: accounts[2], value: web3.utils.toWei('1', 'ether') });
-            isApprover = await campaign.methods.isApprover(accounts[2]).call();
+            isApprover = await campaign.methods.approvers(accounts[2]).call();
             expect(isApprover).to.true;
         });
         it('should increment approversCount if contributer was not previously an approver', async () => {
