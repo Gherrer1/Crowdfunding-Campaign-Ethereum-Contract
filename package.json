@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "mocha test -w",
-    "compile": "node ./ethereum/compile"
+    "compile": "node ./ethereum/compile",
+    "dev": "next dev"
   },
   "repository": {
     "type": "git",
@@ -28,6 +29,9 @@
   },
   "dependencies": {
     "fs-extra": "^7.0.0",
+    "next": "^4.1.4",
+    "react": "^16.5.2",
+    "react-dom": "^16.5.2",
     "solc": "^0.4.25",
     "truffle-hdwallet-provider": "0.0.3",
     "web3": "^1.0.0-beta.36"
