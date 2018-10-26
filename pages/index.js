@@ -1,6 +1,7 @@
 import React from 'react';
-import CampaignFactory from '../ethereum/factory';
 import { Card, Button } from 'semantic-ui-react';
+import CampaignFactory from '../ethereum/factory';
+import Layout from '../components/Layout';
 
 export default class Root extends React.Component {
     constructor(props) {
@@ -29,14 +30,14 @@ export default class Root extends React.Component {
     }
 
     render() {
-  
         return (
-            <div>
-                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.3.3/semantic.min.css" />
-                <h1>Open Campaigns</h1>
-                {this.renderCardGroup()}
-                <Button content="Create Campaign" icon="add circle" labelPosition="left" primary />
-            </div>
+            <Layout>
+                <div>
+                    <h1>Open Campaigns</h1>
+                    <Button content="Create Campaign" icon="add circle" labelPosition="left" primary floated="right" />
+                    {this.renderCardGroup()}
+                </div>
+            </Layout>
         );
     }
 }
