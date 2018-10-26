@@ -3,11 +3,11 @@ import { Form, Button, Input, Message } from 'semantic-ui-react';
 import Layout from '../../components/Layout';
 import web3 from '../../ethereum/web3';
 import CampaignFactory from '../../ethereum/factory';
+import { Router } from '../../routes';
 
 const NO_ACCOUNT_FOUND = 'No meta mask account detected';
 const YOU_CANCELLED = 'You rejected the transaction.';
 const INVALID_VALUE = 'Invalid Value';
-const SUCCESSFULLY_CREATED = 'Successfully created your campaign!';
 
 // TODO: add Eth to Wei converter
 
@@ -48,10 +48,7 @@ export default class CampaignNew extends React.Component {
             await CampaignFactory.methods
                 .createCampaign(this.state.minimumContribution)
                 .send({ from: accounts[0] });
-            this.setState({
-                loading: false,
-                message: SUCCESSFULLY_CREATED,
-            });
+            Router.pushRoute('/');
         } catch(e) {
             return this.setState({
                 message: /denied transaction/.test(e.message) ?
@@ -64,7 +61,7 @@ export default class CampaignNew extends React.Component {
 
     renderMessageBanner() {
         const getBanner = (errorType, helpMessage) => () => (
-            <Message negative={errorType !== SUCCESSFULLY_CREATED} positive={errorType === SUCCESSFULLY_CREATED}>
+            <Message negative>
                 <Message.Header>{errorType}</Message.Header>
                 <p>{helpMessage}</p>
             </Message>

@@ -9,7 +9,7 @@
   "scripts": {
     "test": "mocha test -w",
     "compile": "node ./ethereum/compile",
-    "dev": "next dev"
+    "dev": "node server.js"
   },
   "repository": {
     "type": "git",
@@ -30,6 +30,7 @@
   "dependencies": {
     "fs-extra": "^7.0.0",
     "next": "^4.1.4",
+    "next-routes": "^1.4.2",
     "react": "^16.5.2",
     "react-dom": "^16.5.2",
     "semantic-ui-css": "^2.4.1",

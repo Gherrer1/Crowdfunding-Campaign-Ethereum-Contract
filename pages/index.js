@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, Button } from 'semantic-ui-react';
 import CampaignFactory from '../ethereum/factory';
 import Layout from '../components/Layout';
+import { Link, Router } from '../routes';
 
 export default class Root extends React.Component {
     constructor(props) {
@@ -21,7 +22,11 @@ export default class Root extends React.Component {
         const { campaigns } = this.props;
         const campaignObjects = campaigns.map(address => ({
             header: address,
-            description: <a href="nba.com">Checkout this checkout</a>,
+            description: (
+                <Link route={`/campaigns/${address}`}>
+                    <a>Checkout this campaign</a>
+                </Link>
+            ),
             fluid: true,
         }));
         return (
@@ -34,7 +39,18 @@ export default class Root extends React.Component {
             <Layout>
                 <div>
                     <h1>Open Campaigns</h1>
-                    <Button content="Create Campaign" icon="add circle" labelPosition="left" primary floated="right" />
+                    <Link route="/campaigns/new">
+                        <a>
+                            <Button
+                                content="Create Campaign"
+                                icon="add circle"
+                                labelPosition="left"
+                                primary
+                                floated="right"
+                                onClick={() => Router.pushRoute('/campaigns/new')}
+                            />
+                        </a>
+                    </Link>
                     {this.renderCardGroup()}
                 </div>
             </Layout>
