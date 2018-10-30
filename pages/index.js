@@ -47,7 +47,6 @@ export default class Root extends React.Component {
                                 labelPosition="left"
                                 primary
                                 floated="right"
-                                onClick={() => Router.pushRoute('/campaigns/new')}
                             />
                         </a>
                     </Link>

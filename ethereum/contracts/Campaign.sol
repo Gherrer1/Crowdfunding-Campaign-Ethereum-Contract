@@ -36,6 +36,10 @@ contract Campaign {
         approversCount = 0;
     }
 
+    function getSummary() public view returns (uint, uint, uint, uint, address) {
+        return (address(this).balance, minimumContribution, requests.length, approversCount, manager);
+    }
+
     function createRequest(string desc, uint val, address vendorAddress) public {
         require(msg.sender == manager, "Only the manager can do this.");
 

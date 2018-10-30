@@ -377,6 +377,18 @@ describe('Campaign Contract', () => {
             expect(request.complete).to.be.true;
             let balance = await web3.eth.getBalance(campaign.options.address);
             expect(parseInt(balance)).to.equal(parseInt(balanceBefore) - parseInt(web3.utils.toWei('0.005', 'ether')));
+
+            // get summary
+            const summaryData = await campaign.methods.getSummary().call();
+            const _balance = summaryData['0'];
+            const min = summaryData['1'];
+            const numRequests = summaryData['2'];
+            const numApprovers = summaryData['3'];
+            const expectedBalance = parseInt(balanceBefore) - parseInt( web3.utils.toWei('0.005', 'ether'));
+            expect(_balance).to.equal( `${expectedBalance}` );
+            expect(min).to.equal( web3.utils.toWei('0.01', 'ether') );
+            expect(numRequests).to.equal('1');
+            expect(numApprovers).to.equal('1');
         });
     });
 });
