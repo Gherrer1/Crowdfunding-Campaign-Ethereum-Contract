@@ -48,7 +48,6 @@ export default class ContributeForm extends React.Component {
     }
 
     getFriendlyErrorMessage(devErrorMessage) {
-        console.log(devErrorMessage);
         if(/No "from" address specified/.test(devErrorMessage)) {
             return 'No account found. Please install MetaMask and sign in';
         }
