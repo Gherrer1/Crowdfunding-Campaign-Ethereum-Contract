@@ -13,16 +13,17 @@ class RequestIndex extends React.Component {
             campaign.methods.getNumRequests().call(),
             campaign.methods.approversCount().call(),
         ]);
+        const balance = await web3.eth.getBalance(props.query.address);
         const requests = await Promise.all(
             Array(parseInt(numRequests)).fill().map((_, index) => { return campaign.methods.requests(index).call()}),
         );
 
-        return { requests, numRequests, numApprovers };
+        return { requests, numRequests, numApprovers, balance };
     }
 
     render() {
         const { address } = this.props.url.query;
-        const { numApprovers } = this.props;
+        const { numApprovers, balance } = this.props;
         return (
             <Layout>
                 <h3>Request List</h3>
@@ -47,6 +48,7 @@ class RequestIndex extends React.Component {
                                 index={index}
                                 address={address}
                                 numApprovers={numApprovers}
+                                balance={balance}
                             />   
                         ))}
                     </Table.Body>

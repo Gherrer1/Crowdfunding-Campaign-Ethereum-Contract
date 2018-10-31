@@ -18,9 +18,43 @@ class RequestRow extends React.Component {
 
         this.state = {
             loading: false,
+            finalizeLoading: false,
         };
 
         this.handleApprove = this.handleApprove.bind(this);
+        this.handleFinalize = this.handleFinalize.bind(this);
+    }
+
+    async handleFinalize() {
+        this.setState({ finalizeLoading: true });
+        const { index, address, request, balance, numApprovers } = this.props;
+        try {
+            const accounts = await web3.eth.getAccounts();
+            const campaign = Campaign(address);
+
+            const isManager = (await campaign.methods.manager().call()) === accounts[0];
+            if(!isManager) {
+                throw new Error('Only the manager of this campaign can finalize requests.');
+            }
+            const insuffientFunds = parseInt(balance) < parseInt(request.value);
+            if(insuffientFunds) {
+                throw new Error('Insufficient funds on this campaign to fulfill this request at this time.');
+            }
+            const enoughApproversApprove = parseInt(request.approvalCount) > (parseInt(numApprovers) / 2);
+            if(!enoughApproversApprove) {
+                throw new Error('More than 50% of contributors must approve this request first.');
+            }
+            
+            await campaign.methods.finalizeRequest(index).send({
+                from: accounts[0],
+            });
+            this.setState({ finalizeLoading: false });
+            Router.replaceRoute(`/campaigns/${address}/requests`);
+        } catch(e) {
+            window.alert(getFriendlyErrMsg(e.message));
+        }
+
+        this.setState({ finalizeLoading: false });
     }
 
     async handleApprove() {
@@ -50,9 +84,9 @@ class RequestRow extends React.Component {
     }
 
     render() {
-        const { description, value, recipient, approvalCount } = this.props.request;
+        const { description, value, recipient, approvalCount, complete } = this.props.request;
         const { numApprovers } = this.props;
-        const { loading } = this.state;
+        const { loading, finalizeLoading } = this.state;
 
         return (
             <Table.Row>
@@ -62,10 +96,16 @@ class RequestRow extends React.Component {
                 <Table.Cell>{recipient}</Table.Cell>
                 <Table.Cell>{approvalCount} / {numApprovers}</Table.Cell>
                 <Table.Cell>
-                    <Button color="green" basic loading={loading} onClick={this.handleApprove}>Approve</Button>
+                    {complete ?
+                        'Complete' :
+                        <Button color="green" basic loading={loading} onClick={this.handleApprove}>Approve</Button>
+                    }
                 </Table.Cell>
                 <Table.Cell>
-                    <Button color="teal" basic>Finalize</Button>
+                    {complete ?
+                        'Complete' :
+                        <Button color="teal" basic loading={finalizeLoading} onClick={this.handleFinalize}>Finalize</Button>
+                    }
                 </Table.Cell>
             </Table.Row>
         );
