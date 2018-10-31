@@ -23,7 +23,7 @@ class RequestIndex extends React.Component {
 
     render() {
         const { address } = this.props.url.query;
-        const { numApprovers, balance } = this.props;
+        const { numApprovers, balance, numRequests } = this.props;
         return (
             <Layout>
                 <h3>Request List</h3>
@@ -53,6 +53,8 @@ class RequestIndex extends React.Component {
                         ))}
                     </Table.Body>
                 </Table>
+
+                <p>Found {numRequests} Request{numRequests > 1 ? 's' : ''}</p>
 
                 <Link route={`/campaigns/${address}/requests/new`}>
                     <a>

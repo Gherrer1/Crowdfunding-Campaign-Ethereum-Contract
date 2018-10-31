@@ -44,7 +44,7 @@ class RequestRow extends React.Component {
             if(!enoughApproversApprove) {
                 throw new Error('More than 50% of contributors must approve this request first.');
             }
-            
+
             await campaign.methods.finalizeRequest(index).send({
                 from: accounts[0],
             });
@@ -87,9 +87,10 @@ class RequestRow extends React.Component {
         const { description, value, recipient, approvalCount, complete } = this.props.request;
         const { numApprovers } = this.props;
         const { loading, finalizeLoading } = this.state;
+        const enoughApproversApprove = parseInt(approvalCount) > (parseInt(numApprovers) / 2);
 
         return (
-            <Table.Row>
+            <Table.Row disabled={complete} positive={enoughApproversApprove && !complete}>
                 <Table.Cell>{this.props.index}</Table.Cell>
                 <Table.Cell>{description}</Table.Cell>
                 <Table.Cell>{web3.utils.fromWei(value, 'ether')} ETH</Table.Cell>
