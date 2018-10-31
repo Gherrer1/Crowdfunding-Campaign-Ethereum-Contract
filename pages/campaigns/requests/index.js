@@ -1,14 +1,57 @@
 import React from 'react';
-import { Button } from 'semantic-ui-react';
+import { Button, Table } from 'semantic-ui-react';
 import { Link } from '../../../routes';
 import Layout from '../../../components/Layout';
+import RequestRow from '../../../components/RequestRow';
+import Campaign from '../../../ethereum/campaign';
+import web3 from '../../../ethereum/web3';
 
 class RequestIndex extends React.Component {
+    static async getInitialProps(props) {
+        const campaign = Campaign(props.query.address);
+        const [numRequests, numApprovers] = await Promise.all([
+            campaign.methods.getNumRequests().call(),
+            campaign.methods.approversCount().call(),
+        ]);
+        const requests = await Promise.all(
+            Array(parseInt(numRequests)).fill().map((_, index) => { return campaign.methods.requests(index).call()}),
+        );
+
+        return { requests, numRequests, numApprovers };
+    }
+
     render() {
         const { address } = this.props.url.query;
+        const { numApprovers } = this.props;
         return (
             <Layout>
                 <h3>Request List</h3>
+
+                <Table celled>
+                    <Table.Header>
+                        <Table.Row>
+                            <Table.HeaderCell>ID</Table.HeaderCell>
+                            <Table.HeaderCell>Description</Table.HeaderCell>
+                            <Table.HeaderCell>Amount</Table.HeaderCell>
+                            <Table.HeaderCell>Recipient</Table.HeaderCell>
+                            <Table.HeaderCell>Approval Count</Table.HeaderCell>
+                            <Table.HeaderCell>Approve</Table.HeaderCell>
+                            <Table.HeaderCell>Finalize</Table.HeaderCell>
+                        </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                        {this.props.requests.map((request, index) => (
+                            <RequestRow
+                                key={index}
+                                request={request}
+                                index={index}
+                                address={address}
+                                numApprovers={numApprovers}
+                            />   
+                        ))}
+                    </Table.Body>
+                </Table>
+
                 <Link route={`/campaigns/${address}/requests/new`}>
                     <a>
                         <Button>New Request</Button>
