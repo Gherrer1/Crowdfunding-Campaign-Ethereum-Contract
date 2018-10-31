@@ -1,6 +1,7 @@
 import React from 'react';
-import { Card, Grid } from 'semantic-ui-react';
+import { Card, Grid, Button } from 'semantic-ui-react';
 import Layout from '../../components/Layout';
+import { Link } from '../../routes';
 import ContributeForm from '../../components/ContributeForm';
 import Campaign from '../../ethereum/campaign';
 import web3 from '../../ethereum/web3';
@@ -36,7 +37,7 @@ class CampaignShow extends React.Component {
         const { balance, minContribution, requests, contributorsCount, manager } = this.props;
         const items = [
             {
-                header: web3.utils.fromWei(balance),
+                header: manager,
                 meta: 'Address of Manager',
                 description: 'The manager created this campaign and can create requests and withdraw money',
                 style: {
@@ -59,7 +60,7 @@ class CampaignShow extends React.Component {
                 description: 'Number of people who have already donated to this campaign',
             },
             {
-                header: balance,
+                header: web3.utils.fromWei(balance),
                 meta: 'Balance (in Ether)',
                 description: 'How much money remains in the contract.'
             }
@@ -73,12 +74,23 @@ class CampaignShow extends React.Component {
         return (
             <Layout>
                 <Grid>
-                    <Grid.Column width={10}>
-                        {this.renderCardGroup()}
-                    </Grid.Column>
-                    <Grid.Column width={6}>
-                        <ContributeForm address={this.props.url.query.address} />
-                    </Grid.Column>
+                    <Grid.Row>
+                        <Grid.Column width={10}>
+                            {this.renderCardGroup()}
+                        </Grid.Column>
+                        <Grid.Column width={6}>
+                            <ContributeForm address={this.props.url.query.address} />
+                        </Grid.Column>
+                    </Grid.Row>
+                    <Grid.Row>
+                        <Grid.Column width={10}>
+                            <Link route={`/campaigns/${this.props.url.query.address}/requests`}>
+                                <a>
+                                    <Button primary>View Requests</Button>
+                                </a>
+                            </Link>
+                        </Grid.Column>
+                    </Grid.Row>
                 </Grid>
             </Layout>
         );

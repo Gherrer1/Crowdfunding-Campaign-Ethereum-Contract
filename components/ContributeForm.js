@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, Form, Input, Message } from 'semantic-ui-react';
+import { Router } from '../routes';
 import Campaign from '../ethereum/campaign';
 import web3 from '../ethereum/web3';
 
@@ -34,7 +35,9 @@ export default class ContributeForm extends React.Component {
             this.setState({
                 loading: false,
                 success: true,
+                contribution: '',
             });
+            Router.replaceRoute(`/campaigns/${this.props.address}`);
         } catch(e) {
             this.setState({
                 loading: false,
