@@ -9,7 +9,9 @@
   "scripts": {
     "test": "mocha test -w",
     "compile": "node ./ethereum/compile",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "build": "node ./ethereum/compile && next build",
+    "start": "NODE_ENV=production node server.js"
   },
   "repository": {
     "type": "git",
@@ -25,7 +27,8 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "ganache-cli": "^6.0.3",
-    "mocha": "^5.2.0"
+    "mocha": "^5.2.0",
+    "now": "^11.4.6"
   },
   "dependencies": {
     "fs-extra": "^7.0.0",
@@ -37,6 +40,7 @@
     "semantic-ui-react": "^0.83.0",
     "solc": "^0.4.25",
     "truffle-hdwallet-provider": "0.0.3",
-    "web3": "^1.0.0-beta.36"
+    "web3": "1.0.0-beta.36",
+    "websocket": "^1.0.28"
   }
 }
