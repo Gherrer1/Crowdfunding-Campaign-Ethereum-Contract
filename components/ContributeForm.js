@@ -86,6 +86,12 @@ export default class ContributeForm extends React.Component {
                             <p>{this.getFriendlyErrorMessage(this.state.message)}</p>
                         </Message>
                     }
+                    {this.state.loading &&
+                        <Message>
+                            <Message.Header>Please be patient</Message.Header>
+                            <p>Transaction may take up to 60 seconds for miners to process your transaction.</p>
+                        </Message>
+                    }
                 </Form>
             </div>
         );

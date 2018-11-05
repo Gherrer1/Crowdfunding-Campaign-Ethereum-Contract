@@ -11,7 +11,8 @@
     "compile": "node ./ethereum/compile",
     "dev": "node server.js",
     "build": "node ./ethereum/compile && next build",
-    "start": "NODE_ENV=production node server.js"
+    "start": "NODE_ENV=production node server.js",
+    "deploy": "now"
   },
   "repository": {
     "type": "git",
