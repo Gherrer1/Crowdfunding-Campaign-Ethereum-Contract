@@ -6,24 +6,45 @@ import RequestRow from '../../../components/RequestRow';
 import Campaign from '../../../ethereum/campaign';
 import web3 from '../../../ethereum/web3';
 
+function userIsManager(user, manager) {
+    return user.toLowerCase() === manager.toLowerCase();
+}
+
 class RequestIndex extends React.Component {
     static async getInitialProps(props) {
         const campaign = Campaign(props.query.address);
-        const [numRequests, numApprovers] = await Promise.all([
-            campaign.methods.getNumRequests().call(),
-            campaign.methods.approversCount().call(),
-        ]);
-        const balance = await web3.eth.getBalance(props.query.address);
+        const summary = await campaign.methods.getSummary().call();
+        const balance = summary[0];
+        const numRequests = summary[2];
+        const numApprovers = summary[3];
+        const manager = summary[4];
+
         const requests = await Promise.all(
             Array(parseInt(numRequests)).fill().map((_, index) => { return campaign.methods.requests(index).call()}),
         );
 
-        return { requests, numRequests, numApprovers, balance };
+        return { requests, numRequests, numApprovers, balance, manager };
+    }
+
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            account: null,
+        };
+    }
+
+    async componentDidMount() {
+        let accounts = await web3.eth.getAccounts();
+        this.setState({
+            account: accounts.length === 1 ? accounts[0] : null,
+        });
     }
 
     render() {
         const { address } = this.props.url.query;
-        const { numApprovers, balance, numRequests } = this.props;
+        const { numApprovers, balance, numRequests, manager } = this.props;
+        const { account } = this.state;
         return (
             <Layout>
                 <h3>Request List</h3>
@@ -56,11 +77,13 @@ class RequestIndex extends React.Component {
 
                 <p>Found {numRequests} Request{numRequests > 1 ? 's' : ''}</p>
 
-                <Link route={`/campaigns/${address}/requests/new`}>
-                    <a>
-                        <Button>New Request</Button>
-                    </a>
-                </Link>
+                {account && userIsManager(account, manager) && (
+                    <Link route={`/campaigns/${address}/requests/new`}>
+                        <a>
+                            <Button positive>New Request</Button>
+                        </a>
+                    </Link>
+                )}
             </Layout>
         );
     }
