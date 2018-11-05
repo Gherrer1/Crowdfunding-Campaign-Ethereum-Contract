@@ -6,7 +6,7 @@ import RequestRow from '../../../components/RequestRow';
 import Campaign from '../../../ethereum/campaign';
 import web3 from '../../../ethereum/web3';
 
-function userIsManager(user, manager) {
+function isSameAccount(user, manager) {
     return user.toLowerCase() === manager.toLowerCase();
 }
 
@@ -38,6 +38,15 @@ class RequestIndex extends React.Component {
         let accounts = await web3.eth.getAccounts();
         this.setState({
             account: accounts.length === 1 ? accounts[0] : null,
+        });
+
+        web3.currentProvider.publicConfigStore.on('update', update => {
+            const selectedAccount = update.selectedAddress;
+            if (!isSameAccount(selectedAccount, this.state.account)) {
+                this.setState({
+                    account: selectedAccount,
+                });
+            }
         });
     }
 
@@ -77,7 +86,7 @@ class RequestIndex extends React.Component {
 
                 <p>Found {numRequests} Request{numRequests > 1 ? 's' : ''}</p>
 
-                {account && userIsManager(account, manager) && (
+                {account && isSameAccount(account, manager) && (
                     <Link route={`/campaigns/${address}/requests/new`}>
                         <a>
                             <Button positive>New Request</Button>
